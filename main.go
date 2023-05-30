@@ -32,7 +32,7 @@ var (
 	statusCheckRate      time.Duration = 60 * time.Second
 
 	startUpText = `statNotify inititated... checking for service outages` +
-		`every ` + statusCheckRate.Abs().String()
+		` every ` + statusCheckRate.Abs().String()
 
 	adminEmail string = os.Getenv("statAdminEmail")
 
