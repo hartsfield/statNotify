@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -30,6 +31,9 @@ var (
 	lastNotifyUpStatus   time.Time     = time.Now().AddDate(0, -1, 0)
 	statusCheckRate      time.Duration = 60 * time.Second
 
+	startUpText = `statNotify inititated... checking for service outages` +
+		`every ` + statusCheckRate.Abs().String()
+
 	adminEmail string = os.Getenv("statAdminEmail")
 
 	normalEmailRate    time.Duration = 24 * time.Hour
@@ -50,9 +54,13 @@ func init() {
 	}
 	defer f.Close()
 	log.SetOutput(f)
+	log.Println("Admin Email:", adminEmail)
+	log.Println(startUpText)
 }
 
 func main() {
+	printConsoleMessage()
+
 	ticker := time.NewTicker(statusCheckRate)
 	quit := make(chan struct{})
 	checkStatus()
@@ -123,4 +131,11 @@ func newMsg(recipient, subject, body string) *gmailer.Message {
 		Subject:   subject,
 		Body:      body,
 	}
+}
+
+func printConsoleMessage() {
+	fmt.Println("Today is: ", time.Now().Format(time.UnixDate))
+	fmt.Println(startUpText)
+	fmt.Println("log file:", logFilePath)
+	fmt.Println("Admin Email:", adminEmail)
 }
