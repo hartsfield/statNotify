@@ -45,12 +45,6 @@ func main() {
 		select {
 		case <-ticker.C:
 			checkStatus()
-			if len(downDomains) > 0 {
-				notifyDown()
-			}
-			if len(downDomains) == 0 {
-				notifyUp()
-			}
 		case <-quit:
 			ticker.Stop()
 			return
@@ -60,6 +54,14 @@ func main() {
 
 func checkStatus() {
 	log.Println("checking....")
+
+	if len(downDomains) > 0 {
+		notifyDown()
+	}
+	if len(downDomains) == 0 {
+		notifyUp()
+	}
+
 	for _, domain := range allDomains {
 		resp, err := http.Get(domain)
 		if err != nil {
