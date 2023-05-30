@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -10,6 +11,7 @@ import (
 )
 
 var (
+	// configuration
 	downDomains []string
 	allDomains  []string = []string{
 		"https://telesoft.network/",
@@ -22,11 +24,13 @@ var (
 		"https://tagmachine.xyz",
 	}
 
+	logFilePath = os.Getenv("statLogPath")
+
 	lastNotifyDownStatus time.Time     = time.Now().AddDate(0, -1, 0)
 	lastNotifyUpStatus   time.Time     = time.Now().AddDate(0, -1, 0)
 	statusCheckRate      time.Duration = 60 * time.Second
 
-	adminEmail string = "johnathanhartsfield@gmail.com"
+	adminEmail string = os.Getenv("statAdminEmail")
 
 	normalEmailRate    time.Duration = 24 * time.Hour
 	normalEmailSubject string        = "🟢All systems nominal"
@@ -36,6 +40,17 @@ var (
 	alertEmailSubject string        = "🔴CODE RED ‎"
 	alertEmailBody    string        = "These domains didnt return status 200:\n" + strings.Join(downDomains, ", \n")
 )
+
+func init() {
+	log.SetFlags(log.LstdFlags | log.Lshortfile)
+
+	f, err := os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		log.Fatalf("error opening file: %v", err)
+	}
+	defer f.Close()
+	log.SetOutput(f)
+}
 
 func main() {
 	ticker := time.NewTicker(statusCheckRate)
@@ -53,15 +68,6 @@ func main() {
 }
 
 func checkStatus() {
-	log.Println("checking....")
-
-	if len(downDomains) > 0 {
-		notifyDown()
-	}
-	if len(downDomains) == 0 {
-		notifyUp()
-	}
-
 	for _, domain := range allDomains {
 		resp, err := http.Get(domain)
 		if err != nil {
@@ -76,11 +82,18 @@ func checkStatus() {
 			downDomains = append(downDomains[:index], downDomains[index+1:]...)
 		}
 	}
+
+	if len(downDomains) > 0 {
+		notifyDown()
+	}
+	if len(downDomains) == 0 {
+		notifyUp()
+	}
 }
 
 func notifyDown() {
 	if time.Now().Sub(lastNotifyDownStatus) > alertEmailRate && len(downDomains) > 0 {
-		log.Println(alertEmailSubject)
+		log.Println(alertEmailBody)
 		newMsg(adminEmail, alertEmailSubject, alertEmailBody).Send(func() {
 			lastNotifyDownStatus = time.Now()
 		})
@@ -89,7 +102,6 @@ func notifyDown() {
 
 func notifyUp() {
 	if time.Now().Sub(lastNotifyUpStatus) > normalEmailRate && len(downDomains) == 0 {
-		log.Println(normalEmailSubject)
 		newMsg(adminEmail, normalEmailSubject, normalEmailBody).Send(func() {
 			lastNotifyUpStatus = time.Now()
 		})
