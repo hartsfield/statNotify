@@ -38,14 +38,14 @@ var (
 
 	normalEmailRate    time.Duration = 24 * time.Hour
 	normalEmailSubject string        = "🟢All systems nominal"
-	normalEmailBody    string        = "Domains checked:\n" + strings.Join(allDomains, ", \n")
+	normalEmailBody    string
 
 	alertEmailRate    time.Duration = 6 * time.Hour
 	alertEmailSubject string        = "🔴CODE RED ‎"
-	alertEmailBody    string        = "These domains didnt return status 200:\n" + strings.Join(downDomains, ", \n")
+	alertEmailBody    string
 )
 
-func init() {
+func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 
 	f, err := os.OpenFile(logFilePath, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
@@ -53,12 +53,11 @@ func init() {
 		log.Fatalf("error opening file: %v", err)
 	}
 	defer f.Close()
+
 	log.SetOutput(f)
 	log.Println("Admin Email:", adminEmail)
 	log.Println(startUpText)
-}
 
-func main() {
 	printConsoleMessage()
 
 	ticker := time.NewTicker(statusCheckRate)
@@ -75,6 +74,11 @@ func main() {
 	}
 }
 
+func updateEmailBody() {
+	alertEmailBody = "These domains didnt return status 200:\n" + strings.Join(downDomains, ", \n")
+	normalEmailBody = "Domains checked:\n" + strings.Join(allDomains, ", \n")
+}
+
 func checkStatus() {
 	for _, domain := range allDomains {
 		resp, err := http.Get(domain)
@@ -89,6 +93,7 @@ func checkStatus() {
 		if resp.StatusCode == 200 && index > -1 {
 			downDomains = append(downDomains[:index], downDomains[index+1:]...)
 		}
+		updateEmailBody()
 	}
 
 	if len(downDomains) > 0 {
