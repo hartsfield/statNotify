@@ -37,12 +37,10 @@ var (
 	adminEmail string = os.Getenv("statAdminEmail")
 
 	normalEmailRate    time.Duration = 24 * time.Hour
-	normalEmailSubject string        = "🟢All systems nominal"
-	normalEmailBody    string
+	normalEmailSubject string        = ";^) All systems nominal"
 
 	alertEmailRate    time.Duration = 6 * time.Hour
-	alertEmailSubject string        = "🔴CODE RED ‎"
-	alertEmailBody    string
+	alertEmailSubject string        = "!CODE RED!"
 )
 
 func main() {
@@ -74,11 +72,6 @@ func main() {
 	}
 }
 
-func updateEmailBody() {
-	alertEmailBody = "These domains didnt return status 200:\n" + strings.Join(downDomains, ", \n")
-	normalEmailBody = "Domains checked:\n" + strings.Join(allDomains, ", \n")
-}
-
 func checkStatus() {
 	for _, domain := range allDomains {
 		resp, err := http.Get(domain)
@@ -93,7 +86,6 @@ func checkStatus() {
 		if resp.StatusCode == 200 && index > -1 {
 			downDomains = append(downDomains[:index], downDomains[index+1:]...)
 		}
-		updateEmailBody()
 	}
 
 	if len(downDomains) > 0 {
@@ -106,7 +98,8 @@ func checkStatus() {
 
 func notifyDown() {
 	if time.Now().Sub(lastNotifyDownStatus) > alertEmailRate && len(downDomains) > 0 {
-		log.Println(alertEmailBody)
+		alertEmailBody := "These domains didnt return status 200:\n" + strings.Join(downDomains, ", \n")
+		log.Println(strings.ReplaceAll(alertEmailBody, "\n", " "))
 		newMsg(adminEmail, alertEmailSubject, alertEmailBody).Send(func() {
 			lastNotifyDownStatus = time.Now()
 		})
@@ -115,6 +108,7 @@ func notifyDown() {
 
 func notifyUp() {
 	if time.Now().Sub(lastNotifyUpStatus) > normalEmailRate && len(downDomains) == 0 {
+		normalEmailBody := "Domains checked:\n" + strings.Join(allDomains, ", \n")
 		newMsg(adminEmail, normalEmailSubject, normalEmailBody).Send(func() {
 			lastNotifyUpStatus = time.Now()
 		})
