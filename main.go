@@ -40,7 +40,7 @@ var (
 	normalEmailSubject string        = ";^) All systems nominal"
 
 	alertEmailRate    time.Duration = 6 * time.Hour
-	alertEmailSubject string        = "!CODE RED!"
+	alertEmailSubject string        = "! :^0 CODE RED!"
 )
 
 func main() {
