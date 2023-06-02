@@ -14,4 +14,6 @@ RUN cd /home/hrtsfld
 RUN go mod tidy
 RUN go build -o statNotify
 RUN chown -R hrtsfld /home/hrtsfld
-CMD 'statLogPath=/home/hrtsfld/statlog statAdminEmail=johnathanhartsfield@gmail.com statNotify'
+ENV statLogPath="/home/hrtsfld/statlog"
+ENV statAdminEmail="johnathanhartsfield@gmail.com"
+CMD statNotify
